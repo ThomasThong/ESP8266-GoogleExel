@@ -1,20 +1,23 @@
 #include <ESP8266WiFi.h> 
+#include <ESP8266WiFiMulti.h>
 #include <HTTPSRedirect.h>
 
-const char* ssid = "UIT_Guest"; 
-const char* password = "1denmuoi1";
+ESP8266WiFiMulti wifiMulti;
+
+const char* ssid[3] = {"UIT_Guest", "@ss", "Lu Khai Thong"}; 
+const char* password[3] = {"1denmuoi1", "thomasthong", "0981671490"};
 
 // The ID below comes from Google Sheets. 
 // Towards the bottom of this page, it will explain how this can be obtained 
 
 //https://script.google.com/macros/s/AKfycbzdZRUIw1TjiTetUmZ2kB2eLXS9bET2lglhn0a5jDU8Q6yJoQFB/exec
+//linh kien : https://script.google.com/macros/s/AKfycbxtqyCsAUFHrjH2VsQDha1kleKTuj5730BcFCbzO7ZXvRBCkK4/exec
 const char *GScriptId = "AKfycbzdZRUIw1TjiTetUmZ2kB2eLXS9bET2lglhn0a5jDU8Q6yJoQFB";
 
 // Push data on this interval 
 const int dataPostDelay = 60;     // 15 minutes = 15 * 60 * 1000
 
 const char* host = "script.google.com"; 
-const char* googleRedirHost = "script.googleusercontent.com";
 
 const int httpsPort =     443; 
 HTTPSRedirect client(httpsPort);
@@ -29,12 +32,17 @@ const int AnalogIn                 = A0;
 
 void setup() { 
     Serial.begin(115200); 
-    Serial.println("Connecting to wifi: "); 
-    Serial.println(ssid); 
+    Serial.println("Connecting to wifi "); 
+    //Serial.println(ssid[0]); 
     Serial.flush();
 
-    WiFi.begin(ssid, password); 
-    while (WiFi.status() != WL_CONNECTED) { 
+    WiFi.mode(WIFI_STA);
+
+    wifiMulti.addAP(ssid[0], password[0]);
+    wifiMulti.addAP(ssid[1], password[1]);
+    wifiMulti.addAP(ssid[2], password[2]);
+
+    while (wifiMulti.run() != WL_CONNECTED) { 
             //Serial.print("wifi status : ");
             //Serial.println(WiFi.status());
             delay(500); 
