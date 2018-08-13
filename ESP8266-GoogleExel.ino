@@ -25,16 +25,14 @@ String url = String("/macros/s/") + GScriptId + "/exec?";
 
 const char* fingerprint = "F0 5C 74 77 3F 6B 25 D7 3B 66 4D 43 2F 7E BC 5B E9 28 86 AD";
 
-
-StaticJsonBuffer<200> JsonQuerry;
-enum _component { Res, Cap, Diode, Inductor, IC};
-enum _packet { Hole, Smd, SmdC, Smd0603, Smd0805, Smd1206 };
-enum _icType { Power, Amp, Logic, TransFet, MCU, Others};
+//enum _component { Res = 1, Cap, Diode, Inductor, IC};
+//enum _packet { Hole = 1, Smd, SmdC, Smd0603, Smd0805, Smd1206 };
+//enum _icType { Power = 1, Amp, Logic, TransFet, MCU, Others};
 
 struct ComponentQuerry{
-  _component Component;
-  _icType Type;
-  _packet Packet;
+  String Component;
+  String Type;
+  String Packet;
   String Value ;
   int Quantity;
 };
@@ -61,7 +59,7 @@ void setup() {
     Serial.println(WiFi.localIP());
 
     client.setPrintResponseBody(true);
-    //client.setContentTypeHeader("application/json");
+    client.setContentTypeHeader("application/json");
      
     Serial.print(String("Connecting to ")); 
     Serial.println(host);
@@ -102,6 +100,79 @@ void InputBufferFlush()
       Serial.read();
     }
 }
+void CreateJson (JsonObject& JsonQuerry,  ComponentQuerry Querry)
+{
+//  switch (Querry.Component)
+//    {
+//      case Res:
+//        JsonQuerry["Component"] = "Res";
+//        break;
+//      case Cap:
+//        JsonQuerry["Component"] = "Cap";
+//        break;
+//      case Diode:
+//        JsonQuerry["Component"] = "Diode";
+//        break;
+//      case Inductor:
+//        JsonQuerry["Component"] = "Inductor";
+//        break;
+//      case IC:
+//        JsonQuerry["Component"] = "IC";
+//        break;
+//      default:
+//        break;
+//    }
+//
+//    switch (Querry.Type)
+//    {
+//      case Power:
+//        JsonQuerry["Type"] = "Power";
+//        break;
+//      case Amp:
+//        JsonQuerry["Type"] = "Amp";
+//        break;
+//      case Logic:
+//        JsonQuerry["Type"] = "Logic";
+//        break;
+//      case TransFet:
+//        JsonQuerry["Type"] = "TransFet";
+//        break;
+//      case MCU:
+//        JsonQuerry["Type"] = "MCU";
+//        break;
+//      case Others:
+//        JsonQuerry["Type"] = "Others";
+//        break;
+//      default:
+//        break;
+//    }
+//
+//    switch (Querry.Packet)
+//    {
+//      case Hole:
+//        JsonQuerry["Packet"] = "Hole";
+//        break;
+//      case Smd:
+//        JsonQuerry["Packet"] = "Smd";
+//        break;
+//      case SmdC:
+//        JsonQuerry["Packet"] = "SmdC";
+//        break;
+//      case Smd0603:
+//        JsonQuerry["Packet"] = "Smd0603";
+//        break;
+//      case Smd0805:
+//        JsonQuerry["Packet"] = "Smd0805";
+//        break;
+//      case Smd1206:
+//        JsonQuerry["Packet"] = "Smd1206";
+//        break;
+//      default:
+//        break;
+//    }
+//
+//    JsonQuerry["Value"] = Querry.Value ;
+}
 
 // This is the main method where data gets pushed to the Google sheet 
 void GETData(ComponentQuerry Querry ){ 
@@ -109,6 +180,12 @@ void GETData(ComponentQuerry Querry ){
             Serial.println("Connecting to client again…"); 
             client.connect(host, httpsPort); 
     } 
+    String Temp;
+    StaticJsonBuffer<200> JsonBuffer;
+    JsonObject& JsonQuerry = JsonBuffer.createObject();
+    CreateJson (JsonQuerry,  Querry);
+    
+    JsonQuerry.prettyPrintTo(Serial);
     
     //String urlFinal = url + "tag=" + tag + "&value=" + String(value); 
     client.GET(url, host); 
@@ -139,19 +216,19 @@ void loop() {
     switch (Input)
     {
       case '1':
-        Querry.Component = Res;
+        Querry.Component = "Res";
         break;
       case '2':
-        Querry.Component = Cap;
+        Querry.Component = "Cap";
         break;
       case '3':
-        Querry.Component = Diode;
+        Querry.Component = "Diode";
         break;
       case '4':
-        Querry.Component = Inductor;
+        Querry.Component = "Inductor";
         break;
       case '5':
-        Querry.Component = IC;
+        Querry.Component = "IC";
         IsIC = true;
         break;
       default:
@@ -180,23 +257,23 @@ void loop() {
       switch (Input)
       {
         case '1':
-          Querry.Type = Power;
+          Querry.Type = "Power";
           break;
         case '2':
-          Querry.Type = Amp;
+          Querry.Type = "Amp";
           break;
         case '3':
-          Querry.Type = Logic;
+          Querry.Type = "Logic";
           break;
         case '4':
-          Querry.Type = TransFet;
+          Querry.Type = "TransFet";
           break;
         case '5':
-          Querry.Type = MCU;
+          Querry.Type = "MCU";
           IsIC = true;
           break;
         case '6':
-          Querry.Type = Others;
+          Querry.Type = "Others";
           IsIC = true;
           break;
         default:
@@ -242,16 +319,16 @@ void loop() {
           switch (Input)
           {
             case '1':
-              Querry.Packet = SmdC;
+              Querry.Packet = "SmdC";
               break;
             case '2':
-              Querry.Packet = Smd0603;
+              Querry.Packet = "Smd0603";
               break;
             case '3':
-              Querry.Packet = Smd0805;
+              Querry.Packet = "Smd0805";
               break;
             case '4':
-              Querry.Packet = Smd1206;
+              Querry.Packet = "Smd1206";
               break;
             default:
               Serial.println("wrong input");
@@ -259,7 +336,7 @@ void loop() {
           }
         }
         else {
-          Querry.Packet = Smd;
+          Querry.Packet = "Smd";
           
         }
         break;
@@ -271,5 +348,5 @@ void loop() {
     
     GETData(Querry); 
      
-    delay (dataPostDelay); 
+    //delay (dataPostDelay); 
 }
