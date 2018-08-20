@@ -10,10 +10,8 @@ const char* password[3] = {"1denmuoi1", "thomasthong", "0981671490"};
 
 //https://script.google.com/macros/s/AKfycbzdZRUIw1TjiTetUmZ2kB2eLXS9bET2lglhn0a5jDU8Q6yJoQFB/exec
 //linh kien : https://script.google.com/macros/s/AKfycbxtqyCsAUFHrjH2VsQDha1kleKTuj5730BcFCbzO7ZXvRBCkK4/exec
+//https://script.google.com/macros/s/AKfycbxtqyCsAUFHrjH2VsQDha1kleKTuj5730BcFCbzO7ZXvRBCkK4/exec
 const char *GScriptId = "AKfycbxtqyCsAUFHrjH2VsQDha1kleKTuj5730BcFCbzO7ZXvRBCkK4";
-
-// Push data on this interval 
-const int dataPostDelay = 60*1000;     // 15 minutes = 15 * 60 * 1000
 
 const char* host = "script.google.com"; 
 
@@ -37,6 +35,10 @@ struct ComponentQuerry{
   int Quantity;
 };
 
+
+StaticJsonBuffer<800> Buffer, Payload ;
+char Response [800] ;
+
 void setup() { 
     Serial.begin(115200); 
     Serial.println("Connecting to wifi "); 
@@ -54,12 +56,13 @@ void setup() {
             //Serial.println(WiFi.status());
             delay(500); 
             Serial.print("."); 
+            ESP.wdtFeed();
     } 
     Serial.println(" IP address: "); 
     Serial.println(WiFi.localIP());
 
-    client.setPrintResponseBody(true);
-    client.setContentTypeHeader("application/json");
+    client.setPrintResponseBody(false);
+    //client.setContentTypeHeader("application/json");
      
     Serial.print(String("Connecting to ")); 
     Serial.println(host);
@@ -100,79 +103,6 @@ void InputBufferFlush()
       Serial.read();
     }
 }
-void CreateJson (JsonObject& JsonQuerry,  ComponentQuerry Querry)
-{
-//  switch (Querry.Component)
-//    {
-//      case Res:
-//        JsonQuerry["Component"] = "Res";
-//        break;
-//      case Cap:
-//        JsonQuerry["Component"] = "Cap";
-//        break;
-//      case Diode:
-//        JsonQuerry["Component"] = "Diode";
-//        break;
-//      case Inductor:
-//        JsonQuerry["Component"] = "Inductor";
-//        break;
-//      case IC:
-//        JsonQuerry["Component"] = "IC";
-//        break;
-//      default:
-//        break;
-//    }
-//
-//    switch (Querry.Type)
-//    {
-//      case Power:
-//        JsonQuerry["Type"] = "Power";
-//        break;
-//      case Amp:
-//        JsonQuerry["Type"] = "Amp";
-//        break;
-//      case Logic:
-//        JsonQuerry["Type"] = "Logic";
-//        break;
-//      case TransFet:
-//        JsonQuerry["Type"] = "TransFet";
-//        break;
-//      case MCU:
-//        JsonQuerry["Type"] = "MCU";
-//        break;
-//      case Others:
-//        JsonQuerry["Type"] = "Others";
-//        break;
-//      default:
-//        break;
-//    }
-//
-//    switch (Querry.Packet)
-//    {
-//      case Hole:
-//        JsonQuerry["Packet"] = "Hole";
-//        break;
-//      case Smd:
-//        JsonQuerry["Packet"] = "Smd";
-//        break;
-//      case SmdC:
-//        JsonQuerry["Packet"] = "SmdC";
-//        break;
-//      case Smd0603:
-//        JsonQuerry["Packet"] = "Smd0603";
-//        break;
-//      case Smd0805:
-//        JsonQuerry["Packet"] = "Smd0805";
-//        break;
-//      case Smd1206:
-//        JsonQuerry["Packet"] = "Smd1206";
-//        break;
-//      default:
-//        break;
-//    }
-//
-//    JsonQuerry["Value"] = Querry.Value ;
-}
 
 // This is the main method where data gets pushed to the Google sheet 
 void GETData(ComponentQuerry Querry ){ 
@@ -181,14 +111,28 @@ void GETData(ComponentQuerry Querry ){
             client.connect(host, httpsPort); 
     } 
     String Temp;
-    StaticJsonBuffer<200> JsonBuffer;
-    JsonObject& JsonQuerry = JsonBuffer.createObject();
-    CreateJson (JsonQuerry,  Querry);
+//    StaticJsonBuffer<200> JsonBuffer;
+//    JsonObject& JsonQuerry = JsonBuffer.createObject();
+//    CreateJson (JsonQuerry,  Querry);
     
-    JsonQuerry.prettyPrintTo(Serial);
+//    JsonQuerry.prettyPrintTo(Serial);
     
-    //String urlFinal = url + "tag=" + tag + "&value=" + String(value); 
-    client.GET(url, host); 
+    String urlFinal = url + "Component=" + Querry.Component  + "&Packet=" + Querry.Packet  ;
+    if (Querry.Component == "IC")
+      urlFinal += "&Type=" + Querry.Type  ;
+    Serial.println (urlFinal);
+    client.GET(urlFinal, host); 
+}
+
+void POSTData(JsonArray& payload)
+{
+  if (!client.connected()){ 
+      Serial.println("Connecting to client again…"); 
+      client.connect(host, httpsPort); 
+  } 
+  char JsonChar[100];
+  payload.printTo(JsonChar);
+  client.POST(url, host, JsonChar);
 }
 
 // Continue pushing data at a given interval 
@@ -298,7 +242,7 @@ void loop() {
     switch (Input)
     {
       case '1':
-        Querry.Packet = Hole;
+        Querry.Packet = "Hole";
         break;
       case '2':
         if (! IsIC){
@@ -322,13 +266,13 @@ void loop() {
               Querry.Packet = "SmdC";
               break;
             case '2':
-              Querry.Packet = "Smd0603";
+              Querry.Packet = "0603";
               break;
             case '3':
-              Querry.Packet = "Smd0805";
+              Querry.Packet = "0805";
               break;
             case '4':
-              Querry.Packet = "Smd1206";
+              Querry.Packet = "1206";
               break;
             default:
               Serial.println("wrong input");
@@ -345,8 +289,52 @@ void loop() {
         return;
     }
     Serial.println();
-    
-    GETData(Querry); 
-     
+
+//    String Response = GETData(Querry); 
+    GETData(Querry);
+    client.getResponseBody().toCharArray(Response,1000);
+    //Response = "{\"thử\":\"gps\",\"time\":1351824120,\"data\":[48.756080,2.302038]}";
+    //Response = "{\"Response\":[{\"Value\":\"4.7\",\"Quantity\":\"bich\",\"Index\":2},{\"Value\":\"330\",\"Quantity\":\"bich\",\"Index\":3}]}";
+    Serial.println(Response);
+    JsonArray& JsonResponse = Buffer.parseArray(Response);
+
+    // Test if parsing succeeds.
+    if (!JsonResponse.success()) {
+      Serial.println("parseObject() failed");
+      return;
+    }
+
+    int Index = 1, Select = 0 ;
+    Serial.println("Choose Value");
+    for (auto& a : JsonResponse){
+      Serial.print (Index++);
+      Serial.println(": " + a.as<String>());
+    }
+    while (Serial.available() == 0) {
+      ESP.wdtFeed();
+    }
+    Select = Serial.read() - '0';
+    InputBufferFlush();
+    Serial.println(Select);
+    Serial.println(Index);
+    if ( (Select  >= Index) || (Select < 0)){
+      Serial.println("Wrong input");
+      return;
+    }
+
+    Serial.println("Enter number to change : ");
+    while (Serial.available() == 0) {
+      ESP.wdtFeed();
+    }
+    Input = Serial.read() - '0';
+    InputBufferFlush();
+
+    JsonArray& PostPayload = Payload.createArray();
+    JsonObject& InnerObject = PostPayload.createNestedObject();
+    InnerObject["Index"] = JsonResponse[Select]["Index"];
+    InnerObject["NewValue"]= Input;
+
+    PostPayload.printTo (Serial);
+    POSTData(PostPayload);
     //delay (dataPostDelay); 
 }
